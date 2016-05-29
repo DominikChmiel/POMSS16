@@ -48,11 +48,9 @@ def solve(nStudents, nTutorials, nTeams, groups, preferences, l, u):
 
     # teamgleichheit
     for t, team in itertools.product(range(nTutorials), range(nTeams)):
-        for s1 in range(nStudents):
-            if s1 in groups[team]:
-                 for s2 in range(nStudents):
-                      if s2 in groups[team]:
-                           model.addConstr(x[s1,t] == x[s2,t])
+        for s1 in groups[team]:
+             for s2 in groups[team]:
+                   model.addConstr(x[s1,t] == x[s2,t])
 
 
     def printSolution():
