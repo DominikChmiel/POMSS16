@@ -41,7 +41,7 @@ def graphSingleSolution(path):
     for x in solver.model.getVars():
         if x.x == 1:
             if x.varName.startswith('x'):
-                bid, fid = x.varName.split('_')[1::]
+                fid, bid = x.varName.split('_')[1::]
                 renderLine(bid, fid, 'k-')
             if x.varName.startswith('open'):
                 openedFhs.append(x.varName.split('_')[1])

@@ -4,9 +4,11 @@ import logging
 import math
 from gurobipy import Model, GRB, quicksum
 
+
 # Small helpers for parsing: clean unwanted tokens / convert to float if possible
 def clean_attr(attr):
     return attr.replace('#', '').strip().replace(' ', '_')
+
 
 def get_value(val):
     try:
