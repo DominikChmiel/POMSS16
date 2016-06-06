@@ -57,7 +57,7 @@ def graphSingleSolution(path):
 
     plt.grid(True)
 
-    plt.savefig(path + '.png')
+    plt.savefig(path + '.pdf')
     #plt.show()
     plt.clf()
 

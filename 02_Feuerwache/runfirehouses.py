@@ -85,7 +85,8 @@ class FireSolver(object):
         for bor in self.boroughs:
             # New firehouses
             for fh in self.new_firehouses + self.old_firehouses:
-                name = "x_" + bor["loc_id"] + "_" + fh["loc_id"]
+                name = "x_" + fh["loc_id"] + "_" + bor["loc_id"]
+                print(name)
                 x[bor["loc_id"], fh["loc_id"]] = model.addVar(name=name, vtype ="b", obj=self.cost_coef * euc_dist(bor, fh))
 
         # Open variables
@@ -109,13 +110,11 @@ class FireSolver(object):
         for fh in self.new_firehouses:
             model.addConstr(quicksum(x[key] for key in x if key[1] == fh["loc_id"]) <= self.capacity * openfh[fh["loc_id"]])
 
+        # If it is not removed, the initial assignment needs to be respected
         for fh in self.old_firehouses:
-            # If it is not removed, the initial assignment needs to be respected.
             for bor in self.boroughs:
                 if bor["currently_protected_by"] == fh["loc_id"]:
                     model.addConstr(x[bor["loc_id"], fh["loc_id"]] == 1 - closefh[fh["loc_id"]])
-
-        # Closed firehouses can't serve any burough
         
         # solve it
         model.optimize()
