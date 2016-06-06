@@ -2,8 +2,8 @@
 import logging
 import matplotlib.pyplot as plt
 
-
 from runfirehouses import FireSolver
+
 
 def graphSingleSolution(path):
     solver = FireSolver(path)
@@ -11,7 +11,8 @@ def graphSingleSolution(path):
     plt.figure(1)
     plt.xlabel("x-Coordinate")
     plt.ylabel("y-Coordinate")
-    plt.title('Solution of Group POM_DM')
+    plt.suptitle('Solution of Group POM_DM', fontsize=20)
+    plt.title('Green: New firehouse, Blue: Old firehouse, Black: Borough')
 
     def renderSet(inputData, style):
         x_data =  []
@@ -19,7 +20,7 @@ def graphSingleSolution(path):
         for inp in inputData:
             x_data.append(inp["x_coord"])
             y_data.append(inp["y_coord"])
-        plt.plot(x_data, y_data, style)
+        plt.plot(x_data, y_data, style, markersize=10)
 
     def renderLine(bid, fid, style):
         x_data = []
@@ -42,7 +43,7 @@ def graphSingleSolution(path):
         if x.x == 1:
             if x.varName.startswith('x'):
                 fid, bid = x.varName.split('_')[1::]
-                renderLine(bid, fid, 'k-')
+                renderLine(bid, fid, 'r-')
             if x.varName.startswith('open'):
                 openedFhs.append(x.varName.split('_')[1])
             if x.varName.startswith('close'):
@@ -52,7 +53,7 @@ def graphSingleSolution(path):
 
     # Plot all locations
     renderSet([x for x in solver.new_firehouses if x["loc_id"] in openedFhs], 'bo')
-    renderSet([x for x in solver.old_firehouses if x["loc_id"] not in closedFhs], 'yo')
+    renderSet([x for x in solver.old_firehouses if x["loc_id"] not in closedFhs], 'go')
     renderSet(solver.boroughs, 'ks')
 
     plt.grid(True)
