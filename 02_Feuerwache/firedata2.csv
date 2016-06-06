@@ -1,0 +1,28 @@
+# nOldFirehouses, nNewFirehouses, nBoroughs, cost_coef, capacity
+4, 8, 11, 2.5, 3
+# old firehouses: loc_id, x_coord, y_coord, destruction_cost
+s1, 135, 32, 0
+s2, 359, 121, 0
+s3, 30, 350, 0
+s4, 332, 302, 0
+# new firehouses: loc_id, x_coord, y_coord, construction_cost
+t1, 48, 133, 60
+t2, 165, 96, 60
+t3, 295, 88, 60
+t4, 383, 153, 60
+t5, 223, 185, 60
+t6, 63, 282, 60
+t7, 125, 230, 60
+t8, 275, 248, 60
+# boroughs: loc_id, x_coord, y_coord, currently_protected_by
+b1, 81, 74, s1
+b2, 120, 159, s1
+b3, 200, 38, s1
+b4, 236, 124, s2
+b5, 340, 50, s2
+b6, 439, 88, s2
+b7, 60, 230, s3
+b8, 130, 297, s3
+b9, 185, 230, s3
+b10, 360, 180, s4
+b11, 385, 271, s4
