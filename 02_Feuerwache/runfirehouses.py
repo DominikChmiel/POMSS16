@@ -93,12 +93,12 @@ class FireSolver():
         # Open variables
         openfh = {}
         for fh in self.new_firehouses:
-            openfh[fh["loc_id"]] = model.addVar(name = "open:" + fh["loc_id"], vtype ="b", obj=fh["construction_cost"])
+            openfh[fh["loc_id"]] = model.addVar(name = "open_" + fh["loc_id"], vtype ="b", obj=fh["construction_cost"])
 
         # Close variables
         closefh = {}
         for fh in self.old_firehouses:
-            closefh[fh["loc_id"]] = model.addVar(name = "close:" + fh["loc_id"], vtype ="b", obj=fh["destruction_cost"])
+            closefh[fh["loc_id"]] = model.addVar(name = "close_" + fh["loc_id"], vtype ="b", obj=fh["destruction_cost"])
 
         model.modelSense = GRB.MINIMIZE
         model.update()
@@ -108,10 +108,14 @@ class FireSolver():
             model.addConstr(quicksum(x[key] for key in x if key[0] == bor["loc_id"]) == 1)
 
         # capacity of firehouses
-        for sh in self.new_firehouses:
-            model.addConstr(quicksum(x[key] for key in x if key[1] == sh["loc_id"]) <= self.capacity * openfh[sh["loc_id"]])
-        for sh in self.old_firehouses:
-            model.addConstr(quicksum(x[key] for key in x if key[1] == sh["loc_id"]) <= self.capacity * (1-closefh[sh["loc_id"]]))
+        for fh in self.new_firehouses:
+            model.addConstr(quicksum(x[key] for key in x if key[1] == fh["loc_id"]) <= self.capacity * openfh[fh["loc_id"]])
+
+        for fh in self.old_firehouses:
+            # If it is not removed, the initial assignment needs to be respected.
+            for bor in self.boroughs:
+                if bor["currently_protected_by"] == fh["loc_id"]:
+                    model.addConstr(x[bor["loc_id"], fh["loc_id"]] == 1 - closefh[fh["loc_id"]])
 
         # Closed firehouses can't serve any burough
         
