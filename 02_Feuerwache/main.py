@@ -61,6 +61,7 @@ def graphSingleSolution(path):
 
     plt.savefig(path + '.png')
     #plt.show()
+    plt.clf()
 
 logging.basicConfig(level='DEBUG', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
 
