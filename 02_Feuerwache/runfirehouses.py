@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-
 import os
 import logging
 import math
-from gurobipy import *
+from gurobipy import Model, GRB, quicksum
 
 # Small helpers for parsing: clean unwanted tokens / convert to float if possible
 def clean_attr(attr):

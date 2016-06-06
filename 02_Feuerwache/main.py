@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import logging
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cbook as cbook
 
 
 from runfirehouses import FireSolver
