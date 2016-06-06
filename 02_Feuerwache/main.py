@@ -13,7 +13,7 @@ def graphSingleSolution(path):
     plt.figure(1)
     plt.xlabel("x-Coordinate")
     plt.ylabel("y-Coordinate")
-    plt.title('Solution of Group')
+    plt.title('Solution of Group POM_DM')
 
     def renderSet(inputData, style):
         x_data =  []
@@ -59,7 +59,8 @@ def graphSingleSolution(path):
 
     plt.grid(True)
 
-    plt.show()
+    plt.savefig(path + '.png')
+    #plt.show()
 
 logging.basicConfig(level='DEBUG', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
 
