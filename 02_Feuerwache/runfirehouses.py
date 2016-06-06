@@ -2,7 +2,6 @@
 
 import os
 import logging
-import pprint
 import math
 from gurobipy import *
 
@@ -18,7 +17,7 @@ def get_value(val):
         return val
 
 
-class FireSolver():
+class FireSolver(object):
 
     model = None
 
