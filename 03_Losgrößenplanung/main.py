@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jun 12 16:46:36 2016
-
-@author: Marcel
-"""
+#!/usr/bin/env python3
+import logging
 
 from runlotsizing import LotSolver
+
+logging.basicConfig(level='DEBUG', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
 
 solver = LotSolver("lotData1.txt")
