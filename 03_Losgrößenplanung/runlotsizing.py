@@ -117,8 +117,6 @@ class LotSolver(object):
                 l_[prod]_[period] + x_[prod]_[period] > d_prod_period
                 x_prod_period * a_prod + switch_p1_p2_period * st_p1_p2
                 quicksum(switch[x][y][t]) == 1
-
-
         """
         
         # generate Variables
@@ -148,7 +146,8 @@ class LotSolver(object):
 
             if t != 0:
                 for p in range(1, len(self.store["a"])):
-                    model.addConstr(quicksum(s[key] for key in s if key[2] == (t-1) and key[1] == p) == quicksum(s[key] for key in s if key[2] == (t-1) and key[0] == p), name="valid_switch_%d_%d" %(p, t))
+                    model.addConstr(quicksum(s[key] for key in s if key[2] == (t-1) and key[1] == p) == quicksum(s[key] for key in s if key[2] == t and key[0] == p), 
+                        name="valid_switch_%d_%d" % (p, t))
 
         # Bedarf periode 0
         for p in range(1, len(self.store["l"])):
