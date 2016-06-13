@@ -48,7 +48,7 @@ class LotSolver(object):
                 print("\ninput_line_identifier: " + identifier)
                 print(values)
                 if len(identifier) == 1:
-                    # create 2d array with products as columns and stock at t as rows 
+                     #create 2d array with products as columns and stock at t as rows 
                     if identifier == 'l':
                         for i in range(len(values)):
                             l0 = []
@@ -111,7 +111,7 @@ class LotSolver(object):
             for t in range(1, self.Timehorizon+1):
                 name = "x_" + str(p) + "_" + str(t)
                 print(name)
-                # obj=?
+                # obj maybe as stock costs?
                 x[p, t] = model.addVar(name = name, vtype = "i")
         
         # switch costs
@@ -119,14 +119,37 @@ class LotSolver(object):
         for p1 in range(self.nProducts):
             for p2 in range(self.nProducts):
                 name = "s_" + str(p1) + "_" + str(p2)
+                #switch from p1 to p2
                 s[p1, p2] = model.addVar(name = name, vtype = "i", obj = float(self.s[p1][p2]))
         
         # switch time
-        st = {}
-        for p1 in range(self.nProducts):
-            for p2 in range(self.nProducts):
-                name = "st_" + str(p1) + "_" + str(p2)
-                st[p1, p2] = model.addVar(name = name, vtype = "i", obj = float(self.st[p1][p2]))        
+       # st = {}
+       # for p1 in range(self.nProducts):
+       #     for p2 in range(self.nProducts):
+       #         name = "st_" + str(p1) + "_" + str(p2)
+                # switch from p1 to p2
+       #         st[p1, p2] = model.addVar(name = name, vtype = "i")        
+        
+        # stock costs        
+       # lc = {}
+       # for p in range(1, self.nProducts+1):
+       #     for t in range(1, self.Timehorizon+1):
+       #         name = "stock_costs_of_" + str(p1) + "_in_t_" + str(t)
+       #         lc[p, t] = model.addVar(name = name, vtype = "i", obj = float(x[p, t] * self.h[p])) 
+        
+        # stocks 
+       # l = {}
+       # for p in range(1, self.nProducts+1):
+       #     for t in range(1, self.Timehorizon+1):
+       #         self.l[p].append(quicksum(self.l[p][t-1] + x[p][t] - self.d[p][t]))
+       #         name = "l_of_" + str(p1) + "_in_t_" + str(t)
+       #         l[p, t] = model.addVar(name = name, vytpe = "i", obj = self.l[p][t-1] + x[p, t] - self.d[p][t])
+        
+        # binary switch variable
+        switched = {}
+        for t in range(1, self.Timehorizon+1):
+            switched[t] = model.addVar(name = "switched_in_" + str(t), obj = 1, vtype = "b")
+            
         
         
         model.modelSense = GRB.MINIMIZE
