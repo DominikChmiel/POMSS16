@@ -50,8 +50,10 @@ class LotSolver(object):
         lines = content.strip().split('\n')
         lines.sort()                         # Sort lines in case that the numbers aren't in sequence
         for line in lines:
+            # remove duplicate strings
+            line = " ".join(line.split())
             tokens = line.split(' ')
-            values = [int(x) for x in tokens[1::]]
+            values = [float(x) for x in tokens[1::]]
             if not values:
                 continue
             dims, name = getIdentfier(tokens[0])
@@ -124,55 +126,87 @@ class LotSolver(object):
         l = {}
         # production
         x = {}
-        for p in range(1, len(self.store["a"])):
-            for t in range(1, len(self.store["K"])):
-                # obj maybe as stock costs?
+        for t in range(1, len(self.store["K"])+1):
+            for p in range(1, len(self.store["a"])+1):
                 x[p, t] = model.addVar(name="x_%d_%d" % (p, t), vtype="i")
-                l[p, t] = model.addVar(name="l_%d_%d" % (p, t), vtype="i", obj=float(self.store["h"][p]))
+        for t in range(1, len(self.store["K"])+1):
+            for p in range(1, len(self.store["a"])+1):
+                l[p, t] = model.addVar(name="l_%d_%d" % (p, t), vtype="i", obj=float(self.store["h"][p-1]))
 
         # switch costs
         s = {}
-        for p1 in range(1, len(self.store["a"])):
-            for p2 in range(1, len(self.store["a"])):
-                for t in range(1, len(self.store["K"])):
-                    s[p1, p2, t] = model.addVar(name="s_%d_%d_%d" % (p1, p2, t), vtype="b", obj = float(self.store["s"][p1][p2]))
+        for t in range(0, len(self.store["K"])+1):
+            for p1 in range(1, len(self.store["a"])+1):
+                for p2 in range(1, len(self.store["a"])+1):
+                    s[p1, p2, t] = model.addVar(name="s_%d_%d_%d" % (p1, p2, t), vtype="b", obj=float(self.store["s"][p1-1][p2-1]))
 
         model.modelSense = GRB.MINIMIZE
         model.update()
 
-        # Constraints
-        for t in range(1, len(self.store["K"])):
-            model.addConstr(quicksum(s[key] for key in s if key[2] == t) <= 1, name="single_switch_" + str(t))
+        for y in model.getVars():
+            logging.debug(y.varName)
 
-            if t != 0:
-                for p in range(1, len(self.store["a"])):
+        # Constraints
+
+        # Initially only allow a single product
+        model.addConstr(quicksum(s[key] for key in s if key[2] == 0) == 1, name="single_switch_" + str(t))
+
+        # Only allow products in each period that actually has been switched to
+        for t in range(1, len(self.store["K"])+1):
+            for p in range(1, len(self.store["a"])+1):
+                logging.debug("(%s * %s) >= %s", [s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)], x[p, t].varName, x[p, t].varName)
+                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) * x[p,t] >= x[p,t], name="single_switch_" + str(t))
+
+        for t in range(1, len(self.store["K"])+1):
+            logging.debug('Single switch constraint for ' + str([s[key].varName for key in s if key[2] == t]))
+            model.addConstr(quicksum(s[key] for key in s if key[2] == t) == 1, name="single_switch_" + str(t))
+
+
+            if t != 1:
+                for p in range(1, len(self.store["a"])+1):
+                    logging.debug('valid_switch for ' + str([s[key].varName for key in s if key[2] == (t-1) and key[1] == p]) + " and " + str([s[key].varName for key in s if key[2] == t and key[0] == p]))
                     model.addConstr(quicksum(s[key] for key in s if key[2] == (t-1) and key[1] == p) == quicksum(s[key] for key in s if key[2] == t and key[0] == p), 
                         name="valid_switch_%d_%d" % (p, t))
 
         # Bedarf periode 0
-        for p in range(1, len(self.store["l"])):
-            model.addConstr(x[p, t] + p >= self.store["d"][p][t])
+        for p in range(1, len(self.store["l"])+1):
+            logging.debug('initial %s + %d >= %d', x[p, 1].varName, self.store["l"][p-1], self.store["d"][p-1][0])
+            model.addConstr(x[p, 1] + self.store["l"][p-1] >= self.store["d"][p-1][0])
 
         # Bedarf ab periode 1
-        for t in range(2, len(self.store["K"])):
-            for p in range(1, len(self.store["a"])):
-                model.addConstr(x[p, t] + l[p, t] >= self.store["d"][p][t])
+        for t in range(2, len(self.store["K"])+1):
+            for p in range(1, len(self.store["a"])+1):
+                logging.debug('%s + %s >= %d', x[p, t].varName, l[p, t-1].varName, self.store["d"][p-1][t-1])
+                model.addConstr(x[p, t] + l[p, t-1] >= self.store["d"][p-1][t-1])
 
         # Stundenzahl
-        for t in range(1, len(self.store["K"])):
-            model.addConstr(quicksum(x[key]*self.store["a"][key[0]] for key in x if key[1] == t) + quicksum(s[key]*self.store["st"][key[0]][key[1]] for key in s if key[2] == t) <= self.store["K"][t])
+        for t in range(1, len(self.store["K"])+1):
+
+            logging.debug("sum {} + sum {} <= {}".format([x[key].varName + "*" + str(self.store["a"][key[0]-1]) for key in x if key[1] == t],
+                [s[key].varName + "*" + str(self.store["st"][key[0]-1][key[1]-1]) for key in s if key[2] == t], self.store["K"][t-1]))
+
+            model.addConstr(quicksum(x[key]*self.store["a"][key[0]-1] for key in x if key[1] == t) + quicksum(s[key]*self.store["st"][key[0]-1][key[1]-1] for key in s if key[2] == t) <= self.store["K"][t-1])
 
         # lager periode 0
-        for p in range(1, len(self.store["a"])):
-            model.addConstr(l[p, 1] == self.store["l"][p-1])
+        for p in range(1, len(self.store["a"])+1):
+            logging.debug(l[p, 1].varName + " == " + str(self.store["l"][p-1]) + " + " + x[p, 1].varName + " - " + str(self.store["d"][p-1][0]))
+            model.addConstr(l[p, 1] == self.store["l"][p-1] + x[p, 1] - self.store["d"][p-1][0])
         # lager ab periode 1
-        for t in range(2, len(self.store["K"])-1):
-            for p in range(1, len(self.store["a"])):
-                model.addConstr(l[p, t+1] == l[p, t] + x[p, t] - self.store["d"][p][t])
+        for t in range(2, len(self.store["K"])+1):
+            for p in range(1, len(self.store["a"])+1):
+                logging.debug("{} = {} + {} - {}".format(l[p, t].varName, l[p, t-1].varName, x[p, t].varName, self.store["d"][p-1][t-1]))
+                model.addConstr(l[p, t] == l[p, t-1] + x[p, t] - self.store["d"][p-1][t-1])
         
                 
         # solve it
         model.optimize()
+
+        for y in model.getVars():
+            if y.varName.startswith('s_'):
+                if y.x == 1:
+                    print(y)
+            else:
+                print(y)
 
         self.model = model
 
