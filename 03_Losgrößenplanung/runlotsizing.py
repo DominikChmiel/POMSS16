@@ -100,10 +100,10 @@ class LotSolver(object):
                 l: Anfangslagerbestand
                 ab t=1:
                     In jeder periode Muss bedarf von Kunden gedeckt werden (d[i])
-                    Überschüssiges in lager, kosten von h[i] / time
+                    Ueberschuessiges in lager, kosten von h[i] / time
                     Pro periode K[i] stunden / maschine
                     Pro produkt [i] a[i] stunden
-                    1x umrüsten / maschine / periode, kosten s[i][j], st[i][j] std (von prod i => j)
+                    1x umruesten / maschine / periode, kosten s[i][j], st[i][j] std (von prod i => j)
 
             variables:
                 x_[prod]_[period]: produziert / periode
@@ -163,7 +163,13 @@ class LotSolver(object):
         for t in range(1, len(self.store["K"])):
             model.addConstr(quicksum(x[key]*self.store["a"][key[0]] for key in x if key[1] == t) + quicksum(s[key]*self.store["st"][key[0]][key[1]] for key in s if key[2] == t) <= self.store["K"][t])
 
-
+        # lager periode 0
+        for p in range(1, len(self.store["a"])):
+            model.addConstr(l[p, 1] == self.store["l"][p-1])
+        # lager ab periode 1
+        for t in range(2, len(self.store["K"])-1):
+            for p in range(1, len(self.store["a"])):
+                model.addConstr(l[p, t+1] == l[p, t] + x[p, t] - self.store["d"][p][t])
         
                 
         # solve it
