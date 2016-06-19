@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import logging
 
-from runlotsizing import LotSolver
+from runlotsizing import solve
 
 #logging.basicConfig(level='DEBUG', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
 
-solver = LotSolver("lotData1.txt")
-solver2 = LotSolver("lotData2.txt")
-solver3 = LotSolver("lotData3.txt")
+solver = solve("lotData1.txt")
+solver2 = solve("lotData2.txt")
+solver3 = solve("lotData3.txt")
