@@ -28,7 +28,6 @@ class FireSolver(object):
         else:
             logging.error('Error during parsing. Instance will not be valid.')
 
-
     # Processes a single block form the input-file. Blocks are designated + split by the \n# marker (assumption for simplicity).
     def process_block(self, block):
         if not block:
@@ -88,7 +87,6 @@ class FireSolver(object):
             # New firehouses
             for fh in self.new_firehouses + self.old_firehouses:
                 name = "x_" + fh["loc_id"] + "_" + bor["loc_id"]
-                print(name)
                 x[bor["loc_id"], fh["loc_id"]] = model.addVar(name=name, vtype ="b", obj=self.cost_coef * euc_dist(bor, fh))
 
         # Open variables
@@ -117,6 +115,8 @@ class FireSolver(object):
             for bor in self.boroughs:
                 if bor["currently_protected_by"] == fh["loc_id"]:
                     model.addConstr(x[bor["loc_id"], fh["loc_id"]] == 1 - closefh[fh["loc_id"]])
+                else:
+                    model.addConstr(x[bor["loc_id"], fh["loc_id"]] == 0)
         
         # solve it
         model.optimize()
