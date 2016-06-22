@@ -101,8 +101,10 @@ class LotSolver(object):
 
         timeRange = range(1, tHor + 1)
         prodRange = range(1, nPr + 1)
-        
+
         # generate Variables
+        # boolean production
+        bx = {}
         # lager
         l = {}
         # production
@@ -110,6 +112,7 @@ class LotSolver(object):
         for t in timeRange:
             for p in prodRange:
                 x[p, t] = model.addVar(name="x_%d_%d" % (p, t), vtype="i")
+                bx[p, t] = model.addVar(name="bx_%d_%d" % (p, t), vtype="b")
         for t in range(0, tHor + 1):
             for p in prodRange:
                 l[p, t] = model.addVar(name="l_%d_%d" % (p, t), vtype="i", obj=float(self.store["h"][p-1]))
@@ -138,8 +141,14 @@ class LotSolver(object):
         # Only allow products in each period that actually has been switched to
         for t in timeRange:
             for p in prodRange:
-                logging.debug("(%s * %s) == %s", [s[key].varName for key in s if key[2] == t and (key[1] == p or key[0] == p)], x[p, t].varName, x[p, t].varName)
-                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) * x[p,t] == x[p,t], name="single_switch_" + str(t))
+                logging.debug("(%s) == %s", [s[key].varName for key in s if key[2] == t and (key[1] == p or key[0] == p)], bx[p, t].varName)
+                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) == bx[p,t], name="single_switch_" + str(t))
+
+                # Force bx = 1 iff x != 0
+                logging.debug("%s >= %s", x[p,t].varName, bx[p,t].varName)
+                model.addConstr(x[p,t] >= bx[p,t])
+                logging.debug("%s * (1 - %s) == 0", x[p,t].varName, bx[p,t].varName)
+                model.addConstr(x[p,t] * (1 - bx[p,t]) == 0)
 
         for t in timeRange:
             # Allow only a single switch each period
@@ -152,13 +161,6 @@ class LotSolver(object):
                 model.addConstr(quicksum(s[key] for key in s if key[2] == (t-1) and key[1] == p) == quicksum(s[key] for key in s if key[2] == t and key[0] == p), 
                     name="valid_switch_%d_%d" % (p, t))
 
-
-        # Demands for each period need to be met
-        for t in range(1, tHor+1):
-            for p in prodRange:
-                logging.debug('%s + %s >= %d', x[p, t].varName, l[p, t-1].varName, self.store["d"][p-1][t-1])
-                model.addConstr(x[p, t] + l[p, t-1] >= self.store["d"][p-1][t-1])
-
         # Machine can't be occupied for more then K hours / period
         for t in timeRange:
             logging.debug("sum {} + sum {} <= {}".format([x[key].varName + "*" + str(self.store["a"][key[0]-1]) for key in x if key[1] == t],
@@ -169,7 +171,7 @@ class LotSolver(object):
         for p in prodRange:
             logging.debug("%s == %s", l[p, 0].varName, self.store["l"][p-1])
             model.addConstr(l[p, 0] == self.store["l"][p-1])
-        # Update warehouse stock inbetween periods
+        # Update warehouse stock inbetween periods + enforce demand to be met
         for t in range(1, tHor+1):
             for p in prodRange:
                 logging.debug("{} = {} + {} - {}".format(l[p, t].varName, l[p, t-1].varName, x[p, t].varName, self.store["d"][p-1][t-1]))
@@ -181,7 +183,7 @@ class LotSolver(object):
         # Debugging printouts
         for y in model.getVars():
             if y.x >= 0.001:
-                logging.debug("%s = %s cost %d", y.varName, y.x, y.x*y.obj)
+                logging.warning("%s = %s cost %d", y.varName, y.x, y.x*y.obj)
 
         for t in timeRange:
             logging.debug("%s + %s", (["{}[{}] * {}".format(x[key].x, x[key].varName, self.store["a"][key[0]-1]) for key in x if key[1] == t]), ([str(s[key].varName) + "*" + str(self.store["st"][key[0]-1][key[1]-1]) for key in s if key[2] == t and s[key].x >= 0.001]))           

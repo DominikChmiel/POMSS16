@@ -3,7 +3,7 @@ import logging
 
 from runlotsizing import solve
 
-#logging.basicConfig(level='DEBUG', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
+logging.basicConfig(level='INFO', format="%(asctime)s [%(levelname)-5.5s] %(funcName)s : %(message)s")
 
 solver = solve("lotData1.txt")
 solver2 = solve("lotData2.txt")
