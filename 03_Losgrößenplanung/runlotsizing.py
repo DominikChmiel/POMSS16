@@ -142,7 +142,7 @@ class LotSolver(object):
         for t in timeRange:
             for p in prodRange:
                 logging.debug("(%s) == %s", [s[key].varName for key in s if key[2] == t and (key[1] == p or key[0] == p)], bx[p, t].varName)
-                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) == bx[p,t], name="single_switch_" + str(t))
+                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) >= bx[p,t], name="single_switch_" + str(t))
 
                 # Force bx = 1 iff x != 0
                 logging.debug("%s >= %s", x[p,t].varName, bx[p,t].varName)
@@ -183,7 +183,7 @@ class LotSolver(object):
         # Debugging printouts
         for y in model.getVars():
             if y.x >= 0.001:
-                logging.warning("%s = %s cost %d", y.varName, y.x, y.x*y.obj)
+                logging.debug("%s = %s cost %d", y.varName, y.x, y.x*y.obj)
 
         for t in timeRange:
             logging.debug("%s + %s", (["{}[{}] * {}".format(x[key].x, x[key].varName, self.store["a"][key[0]-1]) for key in x if key[1] == t]), ([str(s[key].varName) + "*" + str(self.store["st"][key[0]-1][key[1]-1]) for key in s if key[2] == t and s[key].x >= 0.001]))           
