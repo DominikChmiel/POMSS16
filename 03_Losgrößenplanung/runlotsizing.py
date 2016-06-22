@@ -145,7 +145,7 @@ class LotSolver(object):
         for t in timeRange:
             for p in prodRange:
                 logging.debug("(%s) == %s", [s[key].varName for key in s if key[2] == t and (key[1] == p or key[0] == p)], bx[p, t].varName)
-                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) >= bx[p,t], name="single_switch2_" + str(t))
+                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) >= bx[p,t], name="single_switch_" + str(t))
 
                 # Force bx = 1 iff x != 0
                 model.addConstr(x[p,t] >= bx[p,t])
