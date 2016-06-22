@@ -102,6 +102,9 @@ class LotSolver(object):
         timeRange = range(1, tHor + 1)
         prodRange = range(1, nPr + 1)
 
+        # Assume that production of products costs at least 1h, so a max of K products can be produced per period
+        bigM = max(self.store["K"])
+
         # generate Variables
         # boolean production
         bx = {}
@@ -142,13 +145,11 @@ class LotSolver(object):
         for t in timeRange:
             for p in prodRange:
                 logging.debug("(%s) == %s", [s[key].varName for key in s if key[2] == t and (key[1] == p or key[0] == p)], bx[p, t].varName)
-                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) >= bx[p,t], name="single_switch_" + str(t))
+                model.addConstr(quicksum(s[key] for key in s if key[2] == t and (key[1] == p or key[0] == p)) >= bx[p,t], name="single_switch2_" + str(t))
 
                 # Force bx = 1 iff x != 0
-                logging.debug("%s >= %s", x[p,t].varName, bx[p,t].varName)
                 model.addConstr(x[p,t] >= bx[p,t])
-                logging.debug("%s * (1 - %s) == 0", x[p,t].varName, bx[p,t].varName)
-                model.addConstr(x[p,t] * (1 - bx[p,t]) == 0)
+                model.addConstr(x[p,t] <= bigM * bx[p,t])
 
         for t in timeRange:
             # Allow only a single switch each period
