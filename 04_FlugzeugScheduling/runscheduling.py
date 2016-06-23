@@ -2,37 +2,17 @@
 import os
 import logging
 from gurobipy import Model, GRB, quicksum
+import pprint
 
 
-# Returns a valid identifier and array-size based on the given token.
-# Token will be first string at the beginning of a line, and comes in 3 vars:
-# 1. nProducts  => can be taken directly, dimension 0
-# 2. l:         => doesn't end in number, return dimension 1, l
-# 3. d1:        => ends in number, return dimensions 2, d (Assumption: Lines will be processed in order, so actual value doesn't matter)
-def getIdentfier(ident):
-    dims = 0
-    if ident.endswith(':'):
-        ident = ident[:-1]
-        dims = 1
-        rev = ident[::-1]
-        index = -1
-        # Extract number from the end of string
-        while rev and rev[0].isdigit():
-            index = index * 10 + int(rev[0])
-            rev = rev[1::]
-        if index != -1:
-            dims = 2
-            name = rev[::-1]
-        else:
-            name = ident
-    else:
-        name = ident
-    return dims, name
 
-
-class LotSolver(object):
+class PlaneSolver(object):
     model = None
     store = {}
+
+    n = 0
+    T = 0
+    planes = []
 
     def __init__(self, filePath):
         if self.import_txt(filePath):
@@ -45,33 +25,35 @@ class LotSolver(object):
         if not content:
             return False
 
-        values = ''
-        lines = content.strip().split('\n')
-        lines.sort()                         # Sort lines in case that the numbers aren't in sequence
-        for line in lines:
-            # remove duplicate strings
-            line = " ".join(line.split())
-            tokens = line.split(' ')
-            values = [float(x) if float(x) % 1 != 0 else int(float(x)) for x in tokens[1::]]
-            if not values:
-                continue
-            dims, name = getIdentfier(tokens[0])
-            if dims == 0:
-                if len(values) != 1:
-                    logging.error('Invalid input for token: ' + tokens[0])
-                    return False
-                logging.debug(name + " => " + str(values[0]))
-                self.store[name] = values[0]
-            elif dims == 1:
-                logging.debug(name + " => " + str(values))
-                self.store[name] = values
-            else:
-                if name not in self.store:
-                    logging.debug("Initializing " + name)
-                    self.store[name] = []
-                # Assumption made here: e.g. lines d1 d2 and d3 appear in sequence in lines-list
-                self.store[name].append(values)
-                logging.debug('New value for ' + name + ': ' + str(self.store[name]))
+        values = []
+        # Remove duplicate spaces + remove newlines
+        content = " ".join(content.replace('\n', ' ').split())
+        try:
+            values = [float(x) if float(x) % 1 != 0 else int(float(x)) for x in content.split()]
+        except ValueError as e:
+            logging.error('Invalid token in input-file.')
+            logging.error(e)
+            return False
+        if len(values) <= 2:
+            logging.error('Too few values in input file.')
+            return False
+        self.n = values[0]
+        self.T = values[1]
+        values = values[2::]
+        if len(values) < self.n * (6 + self.n):
+            logging.error('Too few values in plane-data.')
+            return False
+        if len(values) > self.n * (6 + self.n):
+            logging.warning('Additional tokens at end of input file.')
+        for _ in range(self.n):
+            plane = {}
+            for k, v in zip(["a", "r", "b", "d", "g", "h"], values[0:6]):
+                plane[k] = v
+            plane["s"] = values[6:6 + self.n]
+            values = values[6 + self.n::]
+
+            self.planes.append(plane)
+        pprint.pprint(self.planes)
 
         return True
 
@@ -90,11 +72,11 @@ class LotSolver(object):
 
     def generateInstance(self):
         # Check that store has been intialized correctly
-        if not all([x in self.store for x in ["Timehorizon", "h", "K", "a", "d", "s", "st"]]):
+        if (not self.planes) or (self.n == 0) or (self.T == 0):
             logging.error('Store is not initialized correctly. Check for completeness of input-file.')
             return None
 
-        model = Model("LotSolver")
+        model = Model("PlaneSolver")
 
         # generate Variables
 
@@ -121,4 +103,4 @@ class LotSolver(object):
 
 
 def solve(full_path_instance):
-    return LotSolver(full_path_instance).getInstance()
+    return PlaneSolver(full_path_instance).getInstance()
