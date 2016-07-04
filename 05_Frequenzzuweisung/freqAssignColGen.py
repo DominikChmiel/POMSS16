@@ -16,15 +16,14 @@ def solve(positions, radius):
     rmp = Model("Frequency assignment RMP")
 
     # variables
-    # distribution[] has number of antennas as colums and their corresponding frequency as row value
+    # distribution[f][a]: frequency f used by antenna a
+    # y[f]: number of uses of frequency f
     distribution = []
     y = []
-    distribution.append([0])
     for a in range(numAntennas):
-        #every antenna gets own frequence as starting point
-        distribution[0].append(a)
-        #print(distribution)
-        y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name = "frequenz_" + str(a), obj=1.0))
+        distribution.append([0]*numAntennas)
+        distribution[a][a] = 1
+        y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name="frequenz_" + str(a), obj=1.0))
 
     # minimize
     rmp.modelSense = GRB.MINIMIZE
@@ -33,12 +32,9 @@ def solve(positions, radius):
 
     # critical radius constraint
     cons = []
-    for a1 in xrange(numAntennas):
-        for a2 in xrange(numAntennas):
-            # radius check
-            if (euc_dist(positions[a1], positions[a2]) <= radius):
-                for i in xrange(distribution):
-                    cons.append( rmp.addConstr(distribution[i][a1] != distribution[i][a2]))
+    # every antenna gets exactly one frequency and the frequency must be activated
+    for a in xrange(numAntennas):
+        cons.append(rmp.addConstr(quicksum(distribution[f][a] for f in xrange(len(distribution))) == 1 and y[a] >= 1))
 
 
     solveIP = False
@@ -55,21 +51,28 @@ def solve(positions, radius):
         # dual variables for pp
         x = {}
         for i in xrange(numAntennas):
-            x[i] = pp.addVar(lb=0., ub=GRB.INFINITY, name="x_" + str(i), obj=-1.0 * cons[i].pi,
-                                    vtype=GRB.INTEGER)
+            x[i] = pp.addVar(lb=0., ub=GRB.INFINITY, name="x_" + str(i), obj=-1.0 * cons[i].pi, vtype=GRB.INTEGER)
         pp.modelSense = GRB.MINIMIZE
         pp.update()
 
         #pricing model constraints
-        #TODO
+        #???
+        for a1 in xrange(numAntennas):
+            for a2 in xrange(numAntennas):
+                # radius check
+                if (euc_dist(a1, a2) <= radius):
+                    cons.append(rmp.addConstr(distribution[f][a1] != distribution[f][a2] for f in xrange(len(distribution))))
 
         pp.optimize()
 
-        #if pp.objval < -0.001:
-             #TODO
-        #else:
-         #   for i in xrange(len(y)):
-          #      y[i].vtype = GRB.INTEGER
-           # solveIP = True
+        if pp.objval < -0.001:
+            #???
+             new = [int(x[i].x) for i in xrange(numAntennas)]
+             distribution.append(new)
+             y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
+        else:
+           for i in xrange(len(y)):
+               y[i].vtype = GRB.INTEGER
+           solveIP = True
     # Essenzielle Bedingung: Das RMP- und PP-Modellobjekt muessen zurueckgegeben werden!
     return (rmp, pp)
