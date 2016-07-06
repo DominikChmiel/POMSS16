@@ -79,7 +79,7 @@ def solve(positions, radius):
         if pp.objval < -0.001:
             new = [int(x[i].x + 0.5) for i in xrange(numAntennas)]
             distribution.append(new)
-            y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
+            y.append(rmp.addVar(lb=0., ub=1, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
         else:
             # not converting to integer here because it was not requested
             # for i in xrange(len(y)):
