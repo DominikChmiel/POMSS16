@@ -36,8 +36,8 @@ def solve(positions, radius):
     # rmp constraint
     cons = []
     # every antenna gets one frequency
-    for a in xrange(numAntennas):
-        cons.append(rmp.addConstr(quicksum(distribution[f][a]*y[f] for f in xrange(numAntennas)) >= 1))
+    for a in range(numAntennas):
+        cons.append(rmp.addConstr(quicksum(distribution[f][a]*y[f] for f in range(numAntennas)) >= 1))
 
     #rmp.write("rmp.lp")
     #rmp.write("rmp.mps")
@@ -56,7 +56,7 @@ def solve(positions, radius):
 
         # dual variables for pp
         x = {}
-        for i in xrange(numAntennas):
+        for i in range(numAntennas):
             x[i] = pp.addVar(lb=0., ub=1, name="x_" + str(i), obj=-1.0*cons[i].pi, vtype="b")
 
         # minimize
@@ -65,8 +65,8 @@ def solve(positions, radius):
         pp.update()
 
         # pricing model constraint
-        for a1 in xrange(numAntennas):
-            for a2 in xrange(numAntennas):
+        for a1 in range(numAntennas):
+            for a2 in range(numAntennas):
                 # radius check
                 if a1 != a2 and euc_dist(a1, a2) <= radius:
                     pp.addConstr(x[a1] + x[a2] <= 1)
@@ -76,14 +76,14 @@ def solve(positions, radius):
             raise Exception("Pricing-Problem konnte nicht geloest werden!")
 
         if pp.objval < -0.001:
-            new = [int(x[i].x + 0.5) for i in xrange(numAntennas)]
-             distribution.append(new)
+            new = [int(x[i].x + 0.5) for i in range(numAntennas)]
+            distribution.append(new)
             y.append(rmp.addVar(lb=0., ub=1, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
         else:
             # not converting to integer here because it was not requested
-            # for i in xrange(len(y)):
+            # for i in range(len(y)):
             #     y[i].vtype = GRB.INTEGER
-           solveIP = True
+            solveIP = True
     print('Zielfunktionswert: %f' % (rmp.getObjective().getValue()))
     # Essenzielle Bedingung: Das RMP- und PP-Modellobjekt muessen zurueckgegeben werden!
     return (rmp, pp)
