@@ -14,28 +14,33 @@ def solve(positions, radius):
     numAntennas = len(positions)
 
     rmp = Model("Frequency assignment RMP")
+    print("Berechnung laeuft...")
+    rmp.params.outputFlag = 0
 
     # variables
     # distribution[f][a]: frequency f used by antenna a
-    # y[f]: number of uses of frequency f
+    # y[f]: 1 if frequency f is used
     distribution = []
     y = []
     for a in range(numAntennas):
         distribution.append([0]*numAntennas)
+        # every antenna has own frequency at start (worst case)
         distribution[a][a] = 1
-        y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name="frequenz_" + str(a), obj=1.0))
+        y.append(rmp.addVar(lb=0., ub=1, name="frequenz_" + str(a), obj=1.0))
 
     # minimize
     rmp.modelSense = GRB.MINIMIZE
     # update model
     rmp.update()
 
-    # critical radius constraint
+    # rmp constraint
     cons = []
-    # every antenna gets exactly one frequency and the frequency must be activated
-    for a in range(numAntennas):
-        cons.append(rmp.addConstr(quicksum(distribution[f][a] for f in range(len(distribution))) == 1 and y[a] >= 1))
+    # every antenna gets one frequency
+    for a in xrange(numAntennas):
+        cons.append(rmp.addConstr(quicksum(distribution[f][a]*y[f] for f in xrange(numAntennas)) >= 1))
 
+    #rmp.write("rmp.lp")
+    #rmp.write("rmp.mps")
 
     solveIP = False
     while True:
@@ -46,33 +51,39 @@ def solve(positions, radius):
             break
 
         pp = Model("Frequency assignment PP")
+        pp.params.outputFlag = 0
         pp.setAttr("objCon", 1.)
 
         # dual variables for pp
         x = {}
-        for i in range(numAntennas):
-            x[i] = pp.addVar(lb=0., ub=GRB.INFINITY, name="x_" + str(i), obj=-1.0 * cons[i].pi, vtype=GRB.INTEGER)
+        for i in xrange(numAntennas):
+            x[i] = pp.addVar(lb=0., ub=1, name="x_" + str(i), obj=-1.0*cons[i].pi, vtype="b")
+
+        # minimize
         pp.modelSense = GRB.MINIMIZE
+        # update pricing model
         pp.update()
 
-        #pricing model constraints
-        #???
-        for a1 in range(numAntennas):
-            for a2 in range(numAntennas):
+        # pricing model constraint
+        for a1 in xrange(numAntennas):
+            for a2 in xrange(numAntennas):
                 # radius check
-                if (euc_dist(a1, a2) <= radius):
-                    cons.append(rmp.addConstr(distribution[f][a1] != distribution[f][a2] for f in range(len(distribution))))
+                if a1 != a2 and euc_dist(a1, a2) <= radius:
+                    pp.addConstr(x[a1] + x[a2] <= 1)
 
         pp.optimize()
+        if pp.status != GRB.status.OPTIMAL:
+            raise Exception("Pricing-Problem konnte nicht geloest werden!")
 
         if pp.objval < -0.001:
-            #???
-             new = [int(x[i].x) for i in range(numAntennas)]
+            new = [int(x[i].x + 0.5) for i in xrange(numAntennas)]
              distribution.append(new)
-             y.append(rmp.addVar(lb=0., ub=GRB.INFINITY, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
+            y.append(rmp.addVar(lb=0., ub=1, name="verteilung_"+str(len(y)), obj=1.0, column=Column(new, cons)))
         else:
-           for i in range(len(y)):
-               y[i].vtype = GRB.INTEGER
+            # not converting to integer here because it was not requested
+            # for i in xrange(len(y)):
+            #     y[i].vtype = GRB.INTEGER
            solveIP = True
+    print('Zielfunktionswert: %f' % (rmp.getObjective().getValue()))
     # Essenzielle Bedingung: Das RMP- und PP-Modellobjekt muessen zurueckgegeben werden!
     return (rmp, pp)
