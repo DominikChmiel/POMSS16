@@ -83,13 +83,13 @@ def solve(n, width, height, startNodes, targetNodes, startTimes, endTimes):
         for w, h in itertools.product(range(width - 1), range(height)):
             for i in range(n):
                 for k in range(i+1, n):
-                    logging.debug("%s + %s + %s + %s <= 3", x[i, toGrid(w, h), t - 1].varName, x[i, toGrid(w + 1, h), t - 1].varName, x[k, toGrid(w, h), t].varName, x[k, toGrid(w + 1, h), t].varName)
-                    model.addConstr(x[i, toGrid(w, h), t - 1] + x[i, toGrid(w + 1, h), t - 1] + x[k, toGrid(w, h), t] + x[k, toGrid(w + 1, h), t] <= 3)
+                    logging.debug("%s + %s + %s + %s <= 3", x[i, toGrid(w, h), t - 1].varName, x[i, toGrid(w + 1, h), t].varName, x[k, toGrid(w, h), t].varName, x[k, toGrid(w + 1, h), t - 1].varName)
+                    model.addConstr(x[i, toGrid(w, h), t - 1] + x[i, toGrid(w + 1, h), t] + x[k, toGrid(w, h), t] + x[k, toGrid(w + 1, h), t - 1] <= 3)
         for w, h in itertools.product(range(width), range(height - 1)):
             for i in range(n):
                 for k in range(i+1, n):
-                    logging.debug("%s + %s + %s + %s <= 3", x[i, toGrid(w, h), t - 1].varName, x[i, toGrid(w, h + 1), t - 1].varName, x[k, toGrid(w, h), t].varName, x[k, toGrid(w, h + 1), t].varName)
-                    model.addConstr(x[i, toGrid(w, h), t - 1] + x[i, toGrid(w, h + 1), t - 1] + x[k, toGrid(w, h), t] + x[k, toGrid(w, h + 1), t] <= 3)
+                    logging.debug("%s + %s + %s + %s <= 3", x[i, toGrid(w, h), t - 1].varName, x[i, toGrid(w, h + 1), t].varName, x[k, toGrid(w, h), t].varName, x[k, toGrid(w, h + 1), t - 1].varName)
+                    model.addConstr(x[i, toGrid(w, h), t - 1] + x[i, toGrid(w, h + 1), t] + x[k, toGrid(w, h), t] + x[k, toGrid(w, h + 1), t - 1] <= 3)
 
     # Allow free waiting
     for i, j, t in itertools.product(range(n), range(width * height), range(1, T)):
@@ -104,6 +104,7 @@ def solve(n, width, height, startNodes, targetNodes, startTimes, endTimes):
     model.optimize()
 
     for y in model.getVars():
-        logging.debug("%s = %d", y.varName, y.x)
+        if y.varName.startswith('x') and y.x:
+            logging.debug("%s = %d", y.varName, y.x)
 
     return model
