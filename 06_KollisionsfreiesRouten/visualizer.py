@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import time
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 import numpy as np
 
 from routingdata2 import *
@@ -18,32 +18,34 @@ def get_cmap(N):
         return scalar_map.to_rgba(index)
     return map_index_to_rgb_color
 cmap = get_cmap(n + 2)
-cind = 0
 
 T = max(endTimes) + 1
 cT = 0
 
-
 def plot_positions(t):
-    global cind
     for x in model.getVars():
         if x.varName.startswith('x') and x.varName.endswith(str(t)) and x.x == 1:
-            j = int(x.varName.split('_')[2]) - 1
-            print("%d [%d:%d]" % (j, j % width, j // width), end ="\t")
-            plt.plot(1 + j % width, 1 + j // width, 'o', markersize=20, color=cmap(cind))
-            cind += 1
-    print("")
+            parts = x.varName.split('_')
+            j = int(parts[2]) - 1
+            plt.plot(1 + j % width, height - (j // width), 'o', markersize=20, color=cmap(int(parts[1]) - 1))
 
-while True:
-    cind = 0
+for i in range(1, T):
+    plt.figure(i)
     plt.xlabel("x-Coordinate")
     plt.ylabel("y-Coordinate")
-    plt.title('Timestep: ' + str(cT + 1))
+    plt.title('Timestep: ' + str(i))
+
+    #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    #           ncol=2, mode="expand", borderaxespad=0.)
+    handles = []
+    for x in range(n):
+        handles.append(mpatches.Patch(color=cmap(x), label='S' + str(x+1)))
+    plt.legend(handles=handles)
 
     ax = plt.gca()
 
-    ax.set_ylim(0, width + 1)
-    ax.set_xlim(0, height + 1)
+    ax.set_xlim(0, width + 1)
+    ax.set_ylim(0, height + 1)
     major_ticks = np.arange(0 + 1, max(width, height) + 1, 1)
     ax.set_xticks(major_ticks)
     ax.set_yticks(major_ticks)
@@ -59,9 +61,14 @@ while True:
 
     for line in gridlines:
         line.set_linestyle('-')
-    plot_positions(cT + 1)
-    plt.show(block=False)
-    plt.waitforbuttonpress(timeout=1)
-    plt.close()
-    plt.clf()
-    cT = (cT + 1) % T
+
+    plot_positions(i)
+
+    plt.savefig('data_2/routing_t_' + str(i))
+
+plt.show()
+    #plt.waitforbuttonpress(timeout=1)
+    #
+    #plt.close()
+    #plt.clf()
+    #cT = (cT + 1) % T
