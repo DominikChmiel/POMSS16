@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import logging
 import itertools
 from gurobipy import Model, GRB, quicksum
