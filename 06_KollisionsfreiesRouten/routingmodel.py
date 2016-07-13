@@ -29,18 +29,22 @@ def solve(n, width, height, startNodes, targetNodes, startTimes, endTimes):
     for i, (sN, sT) in enumerate(zip(startNodes, startTimes)):
         for t in range(sT):
             for j in range(width * height):
-                if j == toGrid(sN - 1):
+                if j == toGrid(sN - 1) and t == sT - 1:
                     logging.debug("start: %s == 1", x[i, j, t].varName)
                     model.addConstr(x[i, j, t] == 1)
                 else:
+                    logging.debug("start: %s == 0", x[i, j, t].varName)
                     model.addConstr(x[i, j, t] == 0)
 
     # Force endpositions
     for i, (eN, eT) in enumerate(zip(targetNodes, endTimes)):
         j = toGrid(eN - 1)
-        for t in range(eT - 1, T):
-            logging.debug("end: %s == 1", x[i, j, t].varName)
-            model.addConstr(x[i, j, t] == 1)
+        logging.debug("end: %s == 1", x[i, j, eT - 1].varName)
+        model.addConstr(x[i, j, eT - 1] == 1)
+        # Container vanishes after endTime
+        for t in range(eT, T):
+            logging.debug("end: %s == 0", x[i, j, t].varName)
+            model.addConstr(x[i, j, t] == 0)
 
     # single container per node
     for j, t in itertools.product(range(width * height), range(T)):
@@ -60,16 +64,24 @@ def solve(n, width, height, startNodes, targetNodes, startTimes, endTimes):
             vals += [toGrid(w + 1, h)]
 
         for i, t in itertools.product(range(n), range(1, T)):
-            logging.debug("sum(%s) >= %s", [x[i, j, t].varName for j in vals], x[i, toGrid(w, h), t - 1].varName)
-            model.addConstr(quicksum(x[i, j, t] for j in vals) >= x[i, toGrid(w, h), t - 1])
+            if endTimes[i] > t and startTimes[i] <= t:
+                logging.debug("sum(%s) >= %s", [x[i, j, t].varName for j in vals], x[i, toGrid(w, h), t - 1].varName)
+                model.addConstr(quicksum(x[i, j, t] for j in vals) >= x[i, toGrid(w, h), t - 1])
+            else:
+                logging.debug("skipped(%s) >= %s", [x[i, j, t].varName for j in vals], x[i, toGrid(w, h), t - 1].varName)
 
         for i, t in itertools.product(range(n), range(1, T)):
             logging.debug("sum(%s) <= 1", [x[i, j, t].varName for j in vals])
             model.addConstr(quicksum(x[i, j, t] for j in vals) <= 1)
 
     # Force continous line through grid
-    for i, t in itertools.product(range(n), range(1, T)):
-        model.addConstr(quicksum(x[i, j, t] for j in range(width * height)) == 1)
+    for i, t in itertools.product(range(n), range(0, T)):
+        if endTimes[i] > t and startTimes[i] <= t + 1:
+            logging.debug("sum(%s) == 1", [x[i, j, t].varName for j in range(width * height)])
+            model.addConstr(quicksum(x[i, j, t] for j in range(width * height)) == 1)
+        else:
+            logging.debug("sum(%s) == 0", [x[i, j, t].varName for j in range(width * height)])
+            model.addConstr(quicksum(x[i, j, t] for j in range(width * height)) == 0)
 
     # Prevent ships from passing over same link
     for t in range(1, T):

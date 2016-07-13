@@ -4,6 +4,7 @@ import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import matplotlib.patches as mpatches
 import numpy as np
+import sys
 
 from routingdata2 import *
 
@@ -64,7 +65,12 @@ for i in range(1, T):
 
     plot_positions(i)
 
-    plt.savefig('data_2/routing_t_' + str(i))
+    moduleID = '1'
+    for x in sys.modules.keys():
+        if x.startswith('routingdata'):
+            moduleID = x[-1]
+
+    plt.savefig('data_' + str(moduleID) + '/routing_t_' + str(i))
 
 plt.show()
     #plt.waitforbuttonpress(timeout=1)
