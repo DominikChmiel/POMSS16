@@ -97,14 +97,13 @@ def solve(n, width, height, startNodes, targetNodes, startTimes, endTimes):
                     model.addConstr(x[i, toGrid(w, h), t] + x[i, toGrid(w, h + 1), t - 1] + x[k, toGrid(w, h), t - 1] + x[k, toGrid(w, h + 1), t] <= 3)
 
     # Allow free waiting
-    for i, j, t in itertools.product(range(n), range(width * height), range(1, T)):
-        model.addConstr(x[i, j, t - 1] + x[i, j, t] - 1 <= wait[i, j, t])
-        model.addConstr(x[i, j, t - 1] >= wait[i, j, t])
-        model.addConstr(x[i, j, t] >= wait[i, j, t])
-
-    # Initial state: Waiting is free
-    for i, j in itertools.product(range(n), range(width * height)):
-        model.addConstr(x[i, j, 0] == wait[i, j, 0])
+    for i, j, t in itertools.product(range(n), range(width * height), range(0, T)):
+        if t < startTimes[i]:
+            model.addConstr(x[i, j, t] == wait[i, j, t])
+        else:
+            model.addConstr(x[i, j, t - 1] + x[i, j, t] - 1 <= wait[i, j, t])
+            model.addConstr(x[i, j, t - 1] >= wait[i, j, t])
+            model.addConstr(x[i, j, t] >= wait[i, j, t])
 
     model.optimize()
 
